@@ -85,7 +85,10 @@ def load_theme(theme_name="feature_based"):
             "road_secondary": "#2A2A2A",
             "road_tertiary": "#3A3A3A",
             "road_residential": "#4A4A4A",
-            "road_default": "#3A3A3A"
+            "cylcleway": "#3A3A3A",
+            "path": "#3A3A3A",
+            "road_default": "#3A3A3A",
+            "railway": "#FF0000"
         }
     
     with open(theme_file, 'r') as f:
@@ -158,6 +161,10 @@ def get_edge_colors_by_type(G):
             color = THEME['road_tertiary']
         elif highway in ['residential', 'living_street', 'unclassified']:
             color = THEME['road_residential']
+        elif highway in ['cycleway']:
+            color = THEME['cycleway']
+        elif highway in ['footway', 'bridleway', 'steps', 'corridor', 'path', 'via_ferrata']:
+            color = THEME['path']
         else:
             color = THEME['road_default']
         
@@ -218,26 +225,53 @@ def create_poster(city, country, point, dist, output_file, output_format):
     print(f"\nGenerating map for {city}, {country}...")
     
     # Progress bar for data fetching
-    with tqdm(total=3, desc="Fetching map data", unit="step", bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}') as pbar:
+    with tqdm(total=4, desc="Fetching map data", unit="step", bar_format='{l_bar}{bar}| {n_fmt}/{total_fmt}') as pbar:
         # 1. Fetch Street Network
         pbar.set_description("Downloading street network")
         G = ox.graph_from_point(point, dist=dist, dist_type='bbox', network_type='all')
         pbar.update(1)
         time.sleep(0.5)  # Rate limit between requests
-        
-        # 2. Fetch Water Features
-        pbar.set_description("Downloading water features")
+
+        # 2. Fetch Rail Network
+        pbar.set_description("Downloading rail network")
+        railway_tags = {
+            'railway': ['construction', 'disused', 'funicular', 'light_rail', 'miniature', 'monorail', 'narrow_gauge',
+                        'rail', 'subway', 'tram']
+        }
         try:
-            water = ox.features_from_point(point, tags={'natural': 'water', 'waterway': 'riverbank'}, dist=dist)
+            railways = ox.features_from_point(point, tags=railway_tags, dist=dist)
+        except:
+            railways = None
+        pbar.update(1)
+        time.sleep(0.3)
+
+        # 3. Fetch Water Features
+        pbar.set_description("Downloading water features")
+        water_tags = {
+            'natural': ['blowhole', 'hot_spring', 'shoal', 'strait', 'water'],
+            'water': True,
+            'waterway': ['river', 'riverbank', 'stream', 'tidal_channel', 'canal', 'drain', 'ditch', 'fairway', 'dock',
+                         'dam', 'weir', 'waterfall', 'lock_gate', ]
+        }
+        try:
+            water = ox.features_from_point(point, tags=water_tags, dist=dist)
         except:
             water = None
         pbar.update(1)
         time.sleep(0.3)
-        
-        # 3. Fetch Parks
+
+        # 4. Fetch Parks
         pbar.set_description("Downloading parks/green spaces")
+        parks_tags = {
+            'leisure': ['garden', 'horse_riding', 'miniature_golf', 'nature_reserve', 'park', 'pitch',
+                        'disc_golf_course'],
+            'landuse': ['allotments', 'farmland', 'farmyard', 'animal_keeping', 'flowerbed', 'forest',
+                        'greenhouse_horticulture', 'meadow', 'orchard', 'plant_nursery', 'vineyard', 'cemetery',
+                        'grass', 'landfill', 'recreation_ground' 'village_green'],
+            'natural': ['fell', 'grassland', 'heath', 'scrub', 'tree_row', 'wood']
+        }
         try:
-            parks = ox.features_from_point(point, tags={'leisure': 'park', 'landuse': 'grass'}, dist=dist)
+            parks = ox.features_from_point(point, tags=parks_tags, dist=dist)
         except:
             parks = None
         pbar.update(1)
@@ -263,12 +297,15 @@ def create_poster(city, country, point, dist, output_file, output_format):
         parks_polys = parks[parks.geometry.type.isin(['Polygon', 'MultiPolygon'])]
         if not parks_polys.empty:
             parks_polys.plot(ax=ax, facecolor=THEME['parks'], edgecolor='none', zorder=2)
-    
+
+    if railways is not None and not railways.empty:
+        railways.plot(ax=ax, color=THEME['railway'], linewidth=0.6, zorder=2.5)
+
     # Layer 2: Roads with hierarchy coloring
     print("Applying road hierarchy colors...")
     edge_colors = get_edge_colors_by_type(G)
     edge_widths = get_edge_widths_by_type(G)
-    
+
     ox.plot_graph(
         G, ax=ax, bgcolor=THEME['bg'],
         node_size=0,
