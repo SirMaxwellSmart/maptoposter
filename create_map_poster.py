@@ -296,10 +296,10 @@ def create_poster(city, country, point, dist, output_file, output_format):
         # Filter to only polygon/multipolygon geometries to avoid point features showing as dots
         parks_polys = parks[parks.geometry.type.isin(['Polygon', 'MultiPolygon'])]
         if not parks_polys.empty:
-            parks_polys.plot(ax=ax, facecolor=THEME['parks'], edgecolor='none', zorder=2)
+            parks_polys.plot(ax=ax, facecolor=THEME['parks'], edgecolor='none', zorder=0.5)
 
     if railways is not None and not railways.empty:
-        railways.plot(ax=ax, color=THEME['railway'], linewidth=0.6, zorder=2.5)
+        railways.plot(ax=ax, color=THEME['railway'], linewidth=0.6, zorder=2)
 
     # Layer 2: Roads with hierarchy coloring
     print("Applying road hierarchy colors...")
