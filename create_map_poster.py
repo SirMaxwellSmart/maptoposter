@@ -263,7 +263,7 @@ def create_poster(city, country, point, dist, output_file, output_format):
         # 4. Fetch Parks
         pbar.set_description("Downloading parks/green spaces")
         parks_tags = {
-            'leisure': ['garden', 'horse_riding', 'miniature_golf', 'nature_reserve', 'park', 'pitch',
+            'leisure': ['garden', 'horse_riding', 'dog_park', 'miniature_golf', 'nature_reserve', 'park', 'pitch',
                         'disc_golf_course'],
             'landuse': ['allotments', 'farmland', 'farmyard', 'animal_keeping', 'flowerbed', 'forest',
                         'greenhouse_horticulture', 'meadow', 'orchard', 'plant_nursery', 'vineyard', 'cemetery',
